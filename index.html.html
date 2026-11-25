@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>집중력 타이머</title>
+  <style>
+    :root {
+      --bg-color: #fef6f0;
+      --card-bg: #ffffff;
+      --text-main: #2d3142;
+      --text-sub: #7a8296;
+      --primary: #ff7b7b;
+      --primary-hover: #ff6262;
+      --pause: #ffb347;
+      --pause-hover: #ffa01c;
+      --reset: #94a3b8;
+      --reset-hover: #64748b;
+      --border: #f1e4dc;
+      --display-bg: #fffaf6;
+      --success-bg: #ecfdf5;
+      --success-text: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      width: 100%;
+      max-width: 440px;
+      padding: 32px 26px;
+      border-radius: 28px;
+      box-shadow: 0 12px 30px rgba(255, 123, 123, 0.1);
+      border: 2px solid var(--border);
+      text-align: center;
+    }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    /* 캐릭터 영역 */
+    .character-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .character-svg {
+      width: 110px;
+      height: 110px;
+      transition: transform 0.3s ease;
+    }
+
+    .character-svg.studying {
+      animation: bounce 1.8s infinite ease-in-out;
+    }
+
+    .character-svg.finished {
+      animation: celebrate 0.6s infinite alternate ease-in-out;
+    }
+
+    .speech-bubble {
+      margin-top: 6px;
+      background-color: #fff0eb;
+      color: #d9534f;
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    /* 설정 영역 */
+    .setup-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .input-group label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 0.98rem;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      color: var(--text-main);
+      background-color: #ffffff;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+    }
+
+    .input-group input:disabled {
+      background-color: #f8fafc;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    /* 타이머 표시 영역 */
+    .display-section {
+      background-color: var(--display-bg);
+      border: 2px dashed #ffd6c9;
+      border-radius: 22px;
+      padding: 26px 18px;
+      margin-bottom: 24px;
+    }
+
+    .subject-display {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+      min-height: 1.5em;
+      word-break: keep-all;
+    }
+
+    .time-display {
+      font-size: 4.1rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+
+    .complete-message {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background-color: var(--success-bg);
+      color: var(--success-text);
+      font-weight: 700;
+      font-size: 1.02rem;
+      border-radius: 12px;
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .complete-message.show {
+      display: block;
+    }
+
+    /* 버튼 영역 */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      padding: 14px 10px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      color: #ffffff;
+      transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-start {
+      background-color: var(--primary);
+    }
+    .btn-start:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-pause {
+      background-color: var(--pause);
+    }
+    .btn-pause:hover:not(:disabled) {
+      background-color: var(--pause-hover);
+    }
+
+    .btn-reset {
+      background-color: var(--reset);
+    }
+    .btn-reset:hover:not(:disabled) {
+      background-color: var(--reset-hover);
+    }
+
+    /* 애니메이션 */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    @keyframes celebrate {
+      0% { transform: rotate(-6deg) scale(1); }
+      100% { transform: rotate(6deg) scale(1.06); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 모바일 대응 */
+    @media (max-width: 480px) {
+      .container {
+        padding: 24px 18px;
+      }
+      .character-svg {
+        width: 96px;
+        height: 96px;
+      }
+      .time-display {
+        font-size: 3.3rem;
+      }
+      button {
+        padding: 13px 8px;
+        font-size: 0.92rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1 class="app-title">집중력 타이머</h1>
+
+    <!-- 귀여운 고양이 캐릭터 영역 -->
+    <div class="character-wrapper">
+      <svg id="catCharacter" class="character-svg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <!-- 귀 (왼쪽/오른쪽) -->
+        <polygon points="32,52 24,18 56,36" fill="#ffcdb2" stroke="#4a403a" stroke-width="3.5" stroke-linejoin="round"/>
+        <polygon points="35,47 30,26 50,38" fill="#ff9ebb"/>
+        <polygon points="108,52 116,18 84,36" fill="#ffcdb2" stroke="#4a403a" stroke-width="3.5" stroke-linejoin="round"/>
+        <polygon points="105,47 110,26 90,38" fill="#ff9ebb"/>
+
+        <!-- 얼굴 -->
+        <ellipse cx="70" cy="72" rx="44" ry="38" fill="#fff3eb" stroke="#4a403a" stroke-width="3.5"/>
+
+        <!-- 이마 줄무늬 -->
+        <path d="M70 35 V45 M61 37 V44 M79 37 V44" stroke="#e5989b" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- 기본 눈 (대기/집중) -->
+        <g id="eyesNormal">
+          <circle cx="53" cy="68" r="5" fill="#4a403a"/>
+          <circle cx="51.5" cy="66.5" r="1.8" fill="#ffffff"/>
+          <circle cx="87" cy="68" r="5" fill="#4a403a"/>
+          <circle cx="85.5" cy="66.5" r="1.8" fill="#ffffff"/>
+        </g>
+
+        <!-- 일시정지 눈 (감은 눈) -->
+        <g id="eyesPause" style="display: none;">
+          <path d="M46 69 Q53 74 60 69" fill="none" stroke="#4a403a" stroke-width="3" stroke-linecap="round"/>
+          <path d="M80 69 Q87 74 94 69" fill="none" stroke="#4a403a" stroke-width="3" stroke-linecap="round"/>
+        </g>
+
+        <!-- 완료 눈 (웃는 눈 ^ ^) -->
+        <g id="eyesHappy" style="display: none;">
+          <path d="M46 70 Q53 61 60 70" fill="none" stroke="#4a403a" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M80 70 Q87 61 94 70" fill="none" stroke="#4a403a" stroke-width="3.2" stroke-linecap="round"/>
+        </g>
+
+        <!-- 볼터치 -->
+        <ellipse cx="42" cy="77" rx="6.5" ry="4" fill="#ff9ebb" opacity="0.75"/>
+        <ellipse cx="98" cy="77" rx="6.5" ry="4" fill="#ff9ebb" opacity="0.75"/>
+
+        <!-- 코와 입 -->
+        <polygon points="67,75 73,75 70,79" fill="#ff7b7b"/>
+        <path d="M62 82 Q66 86 70 81 Q74 86 78 82" fill="none" stroke="#4a403a" stroke-width="2.8" stroke-linecap="round"/>
+
+        <!-- 수염 -->
+        <path d="M22 72 L34 74 M21 79 L34 79" stroke="#4a403a" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M118 72 L106 74 M119 79 L106 79" stroke="#4a403a" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- 책 & 앞발 -->
+        <path d="M36 105 L70 112 L104 105 L104 126 L70 133 L36 126 Z" fill="#a8dadc" stroke="#4a403a" stroke-width="3" stroke-linejoin="round"/>
+        <line x1="70" y1="112" x2="70" y2="133" stroke="#4a403a" stroke-width="2.5"/>
+        <ellipse cx="48" cy="105" rx="8" ry="6" fill="#fff3eb" stroke="#4a403a" stroke-width="3"/>
+        <ellipse cx="92" cy="105" rx="8" ry="6" fill="#fff3eb" stroke="#4a403a" stroke-width="3"/>
+      </svg>
+      <div id="speechBubble" class="speech-bubble">오늘도 같이 열공해 보자냥!</div>
+    </div>
+
+    <!-- 과목 및 시간 설정 -->
+    <section class="setup-section">
+      <div class="input-group">
+        <label for="subjectInput">공부할 과목</label>
+        <input
+          type="text"
+          id="subjectInput"
+          placeholder="예: 영어 단어 암기, 전공 복습"
+          maxlength="30"
+        />
+      </div>
+      <div class="input-group">
+        <label for="minutesInput">집중 시간 (분)</label>
+        <input
+          type="number"
+          id="minutesInput"
+          value="25"
+          min="1"
+          max="300"
+        />
+      </div>
+    </section>
+
+    <!-- 중앙 타이머 화면 -->
+    <section class="display-section">
+      <div id="subjectDisplay" class="subject-display">과목을 입력해 주세요</div>
+      <div id="timeDisplay" class="time-display">25:00</div>
+      <div id="completeMessage" class="complete-message">집중시간이 끝났습니다!</div>
+    </section>
+
+    <!-- 제어 버튼 -->
+    <section class="controls">
+      <button id="startBtn" class="btn-start">시작</button>
+      <button id="pauseBtn" class="btn-pause" disabled>일시정지</button>
+      <button id="resetBtn" class="btn-reset">초기화</button>
+    </section>
+  </main>
+
+  <script>
+    const subjectInput = document.getElementById("subjectInput");
+    const minutesInput = document.getElementById("minutesInput");
+    const subjectDisplay = document.getElementById("subjectDisplay");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const completeMessage = document.getElementById("completeMessage");
+
+    const catCharacter = document.getElementById("catCharacter");
+    const speechBubble = document.getElementById("speechBubble");
+    const eyesNormal = document.getElementById("eyesNormal");
+    const eyesPause = document.getElementById("eyesPause");
+    const eyesHappy = document.getElementById("eyesHappy");
+
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let timerId = null;
+    let remainingSeconds = 25 * 60;
+    let isRunning = false;
+    let isStarted = false;
+
+    // 캐릭터 상태 변경 함수
+    function setCharacterState(state) {
+      catCharacter.classList.remove("studying", "finished");
+      eyesNormal.style.display = "none";
+      eyesPause.style.display = "none";
+      eyesHappy.style.display = "none";
+
+      if (state === "idle") {
+        eyesNormal.style.display = "block";
+        speechBubble.textContent = "오늘도 같이 열공해 보자냥!";
+      } else if (state === "studying") {
+        eyesNormal.style.display = "block";
+        catCharacter.classList.add("studying");
+        speechBubble.textContent = "초집중 모드! 화이팅이다냥!";
+      } else if (state === "paused") {
+        eyesPause.style.display = "block";
+        speechBubble.textContent = "잠깐 숨 고르는 중이다냥~";
+      } else if (state === "finished") {
+        eyesHappy.style.display = "block";
+        catCharacter.classList.add("finished");
+        speechBubble.textContent = "목표 달성! 정말 수고했다냥!";
+      }
+    }
+
+    // 초를 MM:SS 문자열로 변환
+    function formatTime(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    // 화면 갱신
+    function updateDisplay() {
+      timeDisplay.textContent = formatTime(remainingSeconds);
+    }
+
+    // 과목명 실시간 반영
+    subjectInput.addEventListener("input", () => {
+      const value = subjectInput.value.trim();
+      subjectDisplay.textContent = value ? value : "과목을 입력해 주세요";
+    });
+
+    // 시간 설정 실시간 반영 (시작 전)
+    minutesInput.addEventListener("input", () => {
+      if (!isStarted) {
+        let mins = parseInt(minutesInput.value, 10);
+        if (isNaN(mins) || mins < 1) mins = 0;
+        remainingSeconds = mins * 60;
+        updateDisplay();
+        completeMessage.classList.remove("show");
+      }
+    });
+
+    // 타이머 종료 처리
+    function finishTimer() {
+      clearInterval(timerId);
+      timerId = null;
+      isRunning = false;
+      remainingSeconds = 0;
+      updateDisplay();
+      completeMessage.classList.add("show");
+      setCharacterState("finished");
+
+      startBtn.disabled = true;
+      pauseBtn.disabled = true;
+      resetBtn.disabled = false;
+    }
+
+    // 시작 버튼
+    startBtn.addEventListener("click", () => {
+      if (isRunning) return;
+
+      if (!isStarted) {
+        const mins = parseInt(minutesInput.value, 10);
+        if (isNaN(mins) || mins < 1) {
+          alert("집중 시간을 1분 이상으로 설정해 주세요.");
+          minutesInput.focus();
+          return;
+        }
+        remainingSeconds = mins * 60;
+        updateDisplay();
+
+        const subject = subjectInput.value.trim();
+        subjectDisplay.textContent = subject ? subject : "집중 공부";
+
+        isStarted = true;
+        subjectInput.disabled = true;
+        minutesInput.disabled = true;
+        completeMessage.classList.remove("show");
+      }
+
+      isRunning = true;
+      setCharacterState("studying");
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+
+      timerId = setInterval(() => {
+        remainingSeconds--;
+        updateDisplay();
+
+        if (remainingSeconds <= 0) {
+          finishTimer();
+        }
+      }, 1000);
+    });
+
+    // 일시정지 버튼
+    pauseBtn.addEventListener("click", () => {
+      if (!isRunning) return;
+
+      clearInterval(timerId);
+      timerId = null;
+      isRunning = false;
+      setCharacterState("paused");
+
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+    });
+
+    // 초기화 버튼
+    resetBtn.addEventListener("click", () => {
+      clearInterval(timerId);
+      timerId = null;
+      isRunning = false;
+      isStarted = false;
+
+      subjectInput.disabled = false;
+      minutesInput.disabled = false;
+
+      let mins = parseInt(minutesInput.value, 10);
+      if (isNaN(mins) || mins < 1) {
+        mins = 25;
+        minutesInput.value = 25;
+      }
+      remainingSeconds = mins * 60;
+      updateDisplay();
+
+      const subject = subjectInput.value.trim();
+      subjectDisplay.textContent = subject ? subject : "과목을 입력해 주세요";
+      completeMessage.classList.remove("show");
+      setCharacterState("idle");
+
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
